@@ -49,16 +49,15 @@ public class MpScheduler extends Scheduler
         new HashMap<Long, DuplicateCounter>();
 
     private final List<Long> m_iv2Masters;
-    private final AtomicLong m_txnId = new AtomicLong(1l << 40);
     private final long m_buddyHSId;
 
     // the current not-needed-any-more point of the repair log.
     long m_repairLogTruncationHandle = Long.MIN_VALUE;
     private CommandLog m_cl;
 
-    MpScheduler(long buddyHSId, SiteTaskerQueue taskQueue)
+    MpScheduler(int partitionId, long buddyHSId, SiteTaskerQueue taskQueue)
     {
-        super(taskQueue);
+        super(partitionId, taskQueue);
         m_buddyHSId = buddyHSId;
         m_iv2Masters = new ArrayList<Long>();
     }
@@ -177,7 +176,9 @@ public class MpScheduler extends Scheduler
         final String procedureName = message.getStoredProcedureName();
         final ProcedureRunner runner = m_loadedProcs.getProcByName(procedureName);
 
-        final long mpTxnId = m_txnId.incrementAndGet();
+        advanceTxnEgo();
+        final long mpTxnId = currentTxnEgoSequence();
+
         // Don't have an SP HANDLE at the MPI, so fill in the unused value
         Iv2Trace.logIv2InitiateTaskMessage(message, m_mailbox.getHSId(), mpTxnId, Long.MIN_VALUE);
         // Handle every-site system procedures (at the MPI)
@@ -291,15 +292,6 @@ public class MpScheduler extends Scheduler
     public void handleCompleteTransactionMessage(CompleteTransactionMessage message)
     {
         throw new RuntimeException("MpScheduler should never see a CompleteTransactionMessage");
-    }
-
-    @Override
-    public void setMaxSeenTxnId(long maxSeenTxnId) {
-        if (maxSeenTxnId == 0) {
-            maxSeenTxnId = (1l << 40);
-        }
-        assert(maxSeenTxnId >= (1l << 40));
-        m_txnId.set(maxSeenTxnId);
     }
 
     @Override
