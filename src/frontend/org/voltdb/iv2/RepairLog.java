@@ -23,10 +23,8 @@ import java.util.LinkedList;
 import java.util.List;
 
 import org.voltcore.logging.VoltLogger;
-
 import org.voltcore.messaging.TransactionInfoBaseMessage;
 import org.voltcore.messaging.VoltMessage;
-
 import org.voltdb.messaging.CompleteTransactionMessage;
 import org.voltdb.messaging.FragmentTaskMessage;
 import org.voltdb.messaging.Iv2InitiateTaskMessage;
@@ -127,9 +125,9 @@ public class RepairLog
         }
         else if (!m_isLeader && msg instanceof Iv2InitiateTaskMessage) {
             final Iv2InitiateTaskMessage m = (Iv2InitiateTaskMessage)msg;
-            m_lastSpHandle = m.getSpHandle();
+            m_lastSpHandle = m.getTxnId();
             truncate(Long.MIN_VALUE, m.getTruncationHandle());
-            m_log.add(new Item(IS_SP, m, m.getSpHandle()));
+            m_log.add(new Item(IS_SP, m, m.getTxnId()));
         }
     }
 

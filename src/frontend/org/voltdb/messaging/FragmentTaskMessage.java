@@ -28,8 +28,8 @@ import org.voltcore.messaging.Subject;
 import org.voltcore.messaging.TransactionInfoBaseMessage;
 import org.voltcore.utils.CoreUtils;
 import org.voltdb.ParameterSet;
-import org.voltdb.utils.LogKeys;
 import org.voltdb.VoltDB;
+import org.voltdb.utils.LogKeys;
 
 /**
  * Message from a stored procedure coordinator to an execution site
@@ -74,6 +74,7 @@ public class FragmentTaskMessage extends TransactionInfoBaseMessage
             if (m_outputDepId != null) {
                 sb.append("\n");
                 sb.append("  OUTPUT_DEPENDENCY_ID ");
+
                 sb.append(m_outputDepId);
             }
             if ((m_inputDepIds != null) && (m_inputDepIds.size() > 0)) {
@@ -96,6 +97,9 @@ public class FragmentTaskMessage extends TransactionInfoBaseMessage
 
     boolean m_isFinal = false;
     byte m_taskType = 0;
+    // IV2: within a partition, the primary initiator and its replicas
+    // use this for intra-partition ordering/lookup
+    private long m_spHandle;
     // Unused, should get removed from this message
     boolean m_shouldUndo = false;
     int m_inputDepCount = 0;
@@ -368,6 +372,9 @@ public class FragmentTaskMessage extends TransactionInfoBaseMessage
         // Fixed header
         msgsize += 2 + 2 + 1 + 1 + 1 + 1 + 1;
 
+        msgsize += 8;        // m_spHandle
+
+
         // Fragment ID block
         msgsize += 8 * m_items.size();
 
@@ -446,6 +453,7 @@ public class FragmentTaskMessage extends TransactionInfoBaseMessage
         }
 
         // Header block
+        buf.putLong(m_spHandle);
         buf.putShort((short) m_items.size());
         buf.putShort(nUnplanned);
         buf.put(m_isFinal ? (byte) 1 : (byte) 0);
@@ -516,6 +524,7 @@ public class FragmentTaskMessage extends TransactionInfoBaseMessage
         super.initFromBuffer(buf);
 
         // Header block
+        m_spHandle = buf.getLong();
         short fragCount = buf.getShort();
         assert(fragCount > 0);
         short unplannedCount = buf.getShort();
@@ -578,6 +587,14 @@ public class FragmentTaskMessage extends TransactionInfoBaseMessage
                 buf.get(item.m_fragmentPlan);
             }
         }
+    }
+
+    public void setSpHandle(long spHandle) {
+        m_spHandle = spHandle;
+    }
+
+    public long getSpHandle() {
+        return m_spHandle;
     }
 
     @Override

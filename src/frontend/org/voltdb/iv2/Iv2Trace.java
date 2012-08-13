@@ -20,15 +20,10 @@ package org.voltdb.iv2;
 import java.util.List;
 
 import org.voltcore.logging.VoltLogger;
-
 import org.voltcore.messaging.VoltMessage;
-
 import org.voltcore.utils.CoreUtils;
-
-import org.voltdb.client.ClientResponse;
-
 import org.voltdb.ClientInterfaceHandleManager;
-
+import org.voltdb.client.ClientResponse;
 import org.voltdb.messaging.FragmentResponseMessage;
 import org.voltdb.messaging.FragmentTaskMessage;
 import org.voltdb.messaging.InitiateResponseMessage;
@@ -121,21 +116,19 @@ public class Iv2Trace
         if (iv2log.isTraceEnabled()) {
             if (msg instanceof InitiateResponseMessage) {
                 InitiateResponseMessage iresp = (InitiateResponseMessage)msg;
-                String logmsg = new String("rxInitRsp %s from %s ciHandle %s txnId %s spHandle %s status %s");
+                String logmsg = new String("rxInitRsp %s from %s ciHandle %s txnId %s status %s");
                 iv2log.trace(String.format(logmsg, CoreUtils.hsIdToString(localHSId),
                             CoreUtils.hsIdToString(iresp.m_sourceHSId),
                             ClientInterfaceHandleManager.handleToString(iresp.getClientInterfaceHandle()),
                             txnIdToString(iresp.getTxnId()),
-                            txnIdToString(iresp.getSpHandle()),
                             respStatusToString(iresp.getClientResponseData().getStatus())));
             }
             else if (msg instanceof FragmentResponseMessage) {
                 FragmentResponseMessage fresp = (FragmentResponseMessage)msg;
-                String logmsg = new String("rxFragRsp %s from %s txnId %s spHandle %s status %s");
+                String logmsg = new String("rxFragRsp %s from %s txnId %s status %s");
                 iv2log.trace(String.format(logmsg, CoreUtils.hsIdToString(localHSId),
                             CoreUtils.hsIdToString(fresp.m_sourceHSId),
                             txnIdToString(fresp.getTxnId()),
-                            txnIdToString(fresp.getSpHandle()),
                             fragStatusToString(fresp.getStatusCode())));
             }
         }
@@ -145,20 +138,15 @@ public class Iv2Trace
             long spHandle)
     {
         if (iv2log.isTraceEnabled()) {
-            String logmsg = new String("rxInitMsg %s from %s ciHandle %s txnId %s spHandle %s trunc %s");
+            String logmsg = new String("rxInitMsg %s from %s ciHandle %s txnId %s trunc %s");
             if (itask.getTxnId() != Long.MIN_VALUE && itask.getTxnId() != txnid) {
                 iv2log.error("Iv2InitiateTaskMessage TXN ID conflict.  Message: " + itask.getTxnId() +
                         ", locally held: " + txnid);
-            }
-            if (itask.getSpHandle() != Long.MIN_VALUE && itask.getSpHandle() != spHandle) {
-                iv2log.error("Iv2InitiateTaskMessage SP HANDLE conflict.  Message: " + itask.getSpHandle() +
-                        ", locally held: " + spHandle);
             }
             iv2log.trace(String.format(logmsg, CoreUtils.hsIdToString(localHSId),
                         CoreUtils.hsIdToString(itask.m_sourceHSId),
                         ClientInterfaceHandleManager.handleToString(itask.getClientInterfaceHandle()),
                         txnIdToString(txnid),
-                        txnIdToString(spHandle),
                         txnIdToString(itask.getTruncationHandle())));
         }
     }

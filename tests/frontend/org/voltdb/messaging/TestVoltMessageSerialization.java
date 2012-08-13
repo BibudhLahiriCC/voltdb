@@ -85,7 +85,6 @@ public class TestVoltMessageSerialization extends TestCase {
         spi.setParams(57, "gooniestoo", "dudemandude");
 
         Iv2InitiateTaskMessage itask = new Iv2InitiateTaskMessage(23, 8, 10L, 100045, true, false, spi, 2101, 3101, true);
-        itask.setSpHandle(31337);
         Iv2InitiateTaskMessage itask2 = (Iv2InitiateTaskMessage) checkVoltMessage(itask);
 
         assertEquals(10L, itask.getTruncationHandle());
@@ -99,8 +98,6 @@ public class TestVoltMessageSerialization extends TestCase {
         assertEquals(itask.getClientInterfaceHandle(), itask2.getClientInterfaceHandle());
         assertEquals(itask.getClientInterfaceHandle(), 2101);
         assertEquals(itask.getConnectionId(), 3101);
-        assertEquals(itask.getSpHandle(), itask2.getSpHandle());
-        assertEquals(31337, itask.getSpHandle());
         assertTrue(itask.isForReplay());
     }
 
@@ -302,7 +299,6 @@ public class TestVoltMessageSerialization extends TestCase {
         spi.setParams(57, "gooniestoo", "dudemandude");
 
         Iv2InitiateTaskMessage itask = new Iv2InitiateTaskMessage(23, 8, 100044, 100045, true, false, spi, 2101, 3101, false);
-        itask.setSpHandle(31337);
 
         Iv2RepairLogResponseMessage r1 = new Iv2RepairLogResponseMessage(0, 1, 2, 3L, itask);
         Iv2RepairLogResponseMessage r2 = (Iv2RepairLogResponseMessage)checkVoltMessage(r1);
@@ -322,8 +318,6 @@ public class TestVoltMessageSerialization extends TestCase {
         assertEquals(itask.getClientInterfaceHandle(), itask2.getClientInterfaceHandle());
         assertEquals(itask.getClientInterfaceHandle(), 2101);
         assertEquals(itask.getConnectionId(), 3101);
-        assertEquals(itask.getSpHandle(), itask2.getSpHandle());
-        assertEquals(31337, itask.getSpHandle());
         assertFalse(itask.isForReplay());
     }
 

@@ -163,14 +163,13 @@ public class SpScheduler extends Scheduler
                     newSpHandle = message.getTxnId();
                     setMaxSeenTxnId(newSpHandle);
                 } else {
-                    advanceTxnEgo();
-                    newSpHandle = currentTxnEgoSequence();
+                    newSpHandle = advanceTxnEgo();
                 }
 
                 // advanceTxnEgo();
                 // newSpHandle = currentTxnEgoSequence();
 
-                msg.setSpHandle(newSpHandle);
+                msg.setTxnId(newSpHandle);
                 // Also, if this is a vanilla single-part procedure, make the TXNID
                 // be the SpHandle (for now)
                 if (!runner.isEverySite()) {
@@ -188,8 +187,6 @@ public class SpScheduler extends Scheduler
                                 msg.getClientInterfaceHandle(),
                                 msg.getConnectionId(),
                                 msg.isForReplay());
-                    // Update the handle in the copy
-                    replmsg.setSpHandle(newSpHandle);
                     m_mailbox.send(com.google.common.primitives.Longs.toArray(m_sendToHSIds),
                             replmsg);
                     DuplicateCounter counter = new DuplicateCounter(
@@ -199,8 +196,8 @@ public class SpScheduler extends Scheduler
                 }
             }
             else {
-                setMaxSeenTxnId(msg.getSpHandle());
-                newSpHandle = currentTxnEgoSequence();
+                setMaxSeenTxnId(msg.getTxnId());
+                newSpHandle = msg.getTxnId();
             }
             m_cl.log(msg);
             Iv2Trace.logIv2InitiateTaskMessage(message, m_mailbox.getHSId(), msg.getTxnId(), newSpHandle);
@@ -236,7 +233,7 @@ public class SpScheduler extends Scheduler
         DuplicateCounter counter = new DuplicateCounter(
                 HostMessenger.VALHALLA,
                 message.getTxnId(), expectedHSIds);
-        m_duplicateCounters.put(message.getSpHandle(), counter);
+        m_duplicateCounters.put(message.getTxnId(), counter);
 
         // is local repair necessary?
         if (needsRepair.contains(m_mailbox.getHSId())) {
@@ -247,7 +244,7 @@ public class SpScheduler extends Scheduler
                     message.getCoordinatorHSId(), message);
 
             final SpProcedureTask task = new SpProcedureTask(m_mailbox, runner,
-                    localWork.getSpHandle(), m_pendingTasks, localWork);
+                    localWork.getTxnId(), m_pendingTasks, localWork);
             m_pendingTasks.offer(task);
         }
 
@@ -264,12 +261,13 @@ public class SpScheduler extends Scheduler
     public void handleInitiateResponseMessage(InitiateResponseMessage message)
     {
         // Send the message to the duplicate counter, if any
-        DuplicateCounter counter = m_duplicateCounters.get(message.getSpHandle());
+        DuplicateCounter counter = m_duplicateCounters.get(message.getTxnId());
+        final long txnId = message.getTxnId();
         if (counter != null) {
             int result = counter.offer(message);
             if (result == DuplicateCounter.DONE) {
-                m_duplicateCounters.remove(message.getSpHandle());
-                m_repairLogTruncationHandle = message.getSpHandle();
+                m_duplicateCounters.remove(txnId);
+                m_repairLogTruncationHandle = txnId;
                 m_mailbox.send(counter.m_destinationId, message);
             }
             else if (result == DuplicateCounter.MISMATCH) {
@@ -280,7 +278,7 @@ public class SpScheduler extends Scheduler
         }
 
         // the initiatorHSId is the ClientInterface mailbox. Yeah. I know.
-        m_repairLogTruncationHandle = message.getSpHandle();
+        m_repairLogTruncationHandle = txnId;
         m_mailbox.send(message.getInitiatorHSId(), message);
     }
 
@@ -291,7 +289,7 @@ public class SpScheduler extends Scheduler
         // borrows do not advance the sp handle. The handle would
         // move backwards anyway once the next message is received
         // from the SP leader.
-        long newSpHandle = currentTxnEgoSequence();
+        long newSpHandle = getCurrentTxnId();
         Iv2Trace.logFragmentTaskMessage(message.getFragmentTaskMessage(),
                 m_mailbox.getHSId(), newSpHandle, true);
         TransactionState txn = m_outstandingTxns.get(message.getTxnId());
@@ -340,8 +338,7 @@ public class SpScheduler extends Scheduler
             // all the messaging mess at some point.
             msg = new FragmentTaskMessage(message.getInitiatorHSId(),
                     message.getCoordinatorHSId(), message);
-            advanceTxnEgo();
-            newSpHandle = currentTxnEgoSequence();
+            newSpHandle = advanceTxnEgo();
             msg.setSpHandle(newSpHandle);
             // If we have input dependencies, it's borrow work, there's no way we
             // can actually distribute it

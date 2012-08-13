@@ -19,20 +19,17 @@ package org.voltdb.iv2;
 
 import java.util.ArrayList;
 import java.util.Comparator;
-
-import java.util.concurrent.Future;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.TreeSet;
+import java.util.concurrent.Future;
 
 import org.voltcore.logging.VoltLogger;
 import org.voltcore.messaging.VoltMessage;
-
 import org.voltcore.utils.CoreUtils;
 import org.voltcore.utils.Pair;
-
 import org.voltdb.messaging.Iv2RepairLogRequestMessage;
 import org.voltdb.messaging.Iv2RepairLogResponseMessage;
 
@@ -44,7 +41,7 @@ public class SpPromoteAlgo implements RepairAlgo
     private final InitiatorMailbox m_mailbox;
     private final long m_requestId = System.nanoTime();
     private final List<Long> m_survivors;
-    private long m_maxSeenTxnId = TxnEgo.SEQUENCE_ZERO;
+    private long m_maxSeenTxnId = TxnEgo.makeZero(0).getTxnId();
 
     // Each Term can process at most one promotion; if promotion fails, make
     // a new Term and try again (if that's your big plan...)

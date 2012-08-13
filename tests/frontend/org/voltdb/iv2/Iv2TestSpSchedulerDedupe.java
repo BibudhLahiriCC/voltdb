@@ -45,6 +45,7 @@ import org.voltcore.messaging.Mailbox;
 import org.voltcore.messaging.VoltMessage;
 import org.voltcore.zk.MapCache;
 import org.voltdb.ClientResponseImpl;
+import org.voltdb.CommandLog;
 import org.voltdb.LoadedProcedureSet;
 import org.voltdb.ParameterSet;
 import org.voltdb.ProcedureRunner;
@@ -90,6 +91,7 @@ public class Iv2TestSpSchedulerDedupe extends TestCase
         dut = new SpScheduler(0, new SiteTaskerQueue());
         dut.setMailbox(mbox);
         dut.setProcedureSet(procs);
+        dut.setCommandLog(mock(CommandLog.class));
     }
 
     private Iv2InitiateTaskMessage createMsg(long txnId, boolean readOnly,
@@ -112,7 +114,7 @@ public class Iv2TestSpSchedulerDedupe extends TestCase
                                        Long.MAX_VALUE, // connectionId
                                        false); // isForReplay
         // sp: sphandle == txnid
-        task.setSpHandle(txnId);
+        task.setTxnId(txnId);
         return task;
     }
 
@@ -125,14 +127,14 @@ public class Iv2TestSpSchedulerDedupe extends TestCase
                                     readOnly,
                                     false);
         // set sphandle to something arbitrarily not partition 0.
-        frag.setSpHandle(TxnEgo.makeZero(10).getSequence());
+        frag.setSpHandle(TxnEgo.makeZero(10).getTxnId());
         return frag;
     }
 
     @Test
     public void testReplicaInitiateTaskResponse() throws Exception
     {
-        long txnid = TxnEgo.makeZero(0).getSequence();
+        long txnid = TxnEgo.makeZero(0).getTxnId();
         long primary_hsid = 1111l;
 
         createObjs();
@@ -149,7 +151,7 @@ public class Iv2TestSpSchedulerDedupe extends TestCase
     @Test
     public void testReplicaFragmentTaskResponse() throws Exception
     {
-        long txnid = TxnEgo.makeZero(0).getSequence();
+        long txnid = TxnEgo.makeZero(0).getTxnId();
         long primary_hsid = 1111l;
 
         createObjs();
